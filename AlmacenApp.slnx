@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/almacenapp/" />
+  <Folder Name="/almacenapp/backend/">
+    <Project Path="almacenapp/backend/AlmacenApi/AlmacenApi.csproj" />
+  </Folder>
+  <Project Path="almacenapp/almacenapp.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+</Solution>
