@@ -16,3 +16,6 @@ dist-ssr/
 !.vscode/extensions.json
 .idea/
 .DS_Store
+
+# Carpeta de archivos temporales generados durante el desarrollo con Claude
+Claude outputs/
