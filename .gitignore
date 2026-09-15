@@ -19,3 +19,7 @@ dist-ssr/
 
 # Carpeta de archivos temporales generados durante el desarrollo con Claude
 Claude outputs/
+
+# Variables de entorno con secretos para Docker (contraseña de SQL Server,
+# clave JWT). .env.example sí se sube, con valores de ejemplo.
+.env

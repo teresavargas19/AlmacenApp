@@ -65,7 +65,9 @@ public class Ubicacion
 
     public bool Activo { get; set; } = true;
 
-    public Almacen Almacen { get; set; } = null!;
+    // Nullable a propósito: al crear/editar una ubicación el cliente solo
+    // manda AlmacenId; ver la nota en Producto.Categoria/UnidadMedida.
+    public Almacen? Almacen { get; set; }
     public ICollection<Existencia> Existencias { get; set; } = new List<Existencia>();
 }
 

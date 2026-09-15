@@ -2,6 +2,8 @@ export interface UsuarioSesion {
   id: number
   rolId: number
   rolNombre: string
+  /** "*" (todo) o lista separada por comas de claves de módulo. Ver permisos.ts. */
+  permisos?: string | null
   nombre: string
   email: string
   activo: boolean
@@ -151,4 +153,21 @@ export interface SalidaDetail {
   estado: string
   observaciones?: string | null
   detalles: SalidaDetalleView[]
+}
+
+export interface Rol {
+  id: number
+  nombre: string
+  permisos?: string | null
+}
+
+export interface Usuario {
+  id: number
+  rolId: number
+  rolNombre: string
+  /** "*" (todo) o lista separada por comas de claves de módulo. Ver permisos.ts. */
+  permisos?: string | null
+  nombre: string
+  email: string
+  activo: boolean
 }

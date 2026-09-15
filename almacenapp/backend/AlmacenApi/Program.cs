@@ -52,6 +52,18 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// En Docker la base de datos parte vacía: si AutoMigrate=true (lo activa
+// docker-compose.yml) se aplican las migraciones automáticamente al
+// arrancar, lo que también materializa los datos semilla (HasData). En
+// desarrollo local normal esto queda apagado (falta la clave o es "false")
+// y las migraciones se siguen aplicando a mano con `dotnet ef database update`.
+if (app.Configuration.GetValue<bool>("AutoMigrate"))
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AlmacenDbContext>();
+    db.Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

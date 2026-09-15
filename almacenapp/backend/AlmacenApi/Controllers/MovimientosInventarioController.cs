@@ -145,6 +145,12 @@ public class MovimientosInventarioController(AlmacenDbContext context) : Control
         };
         context.MovimientosInventario.Add(movimiento);
 
+        // Hay que guardar el cambio de Existencia antes de recalcular el stock:
+        // RecalcularStockProductoAsync suma las Existencias tal como están en la
+        // base de datos, así que si no se guarda primero, sumaría el valor
+        // anterior (sin este movimiento) y Producto.Stock quedaría desfasado.
+        await context.SaveChangesAsync(cancellationToken);
+
         await context.RecalcularStockProductoAsync(dto.ProductoId, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
 
@@ -205,6 +211,10 @@ public class MovimientosInventarioController(AlmacenDbContext context) : Control
                 Referencia = dto.Referencia,
                 Observaciones = dto.Observaciones ?? "Entrada por transferencia"
             });
+
+        // Igual que en RegistrarMovimiento: hay que guardar las Existencias antes
+        // de recalcular el stock, para que la suma no use valores desactualizados.
+        await context.SaveChangesAsync(cancellationToken);
 
         // El total global del producto no cambia con una transferencia, pero se
         // recalcula igual por si Producto.Stock estaba desincronizado.

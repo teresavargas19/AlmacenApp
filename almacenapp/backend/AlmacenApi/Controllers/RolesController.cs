@@ -1,5 +1,6 @@
 using AlmacenApi.Data;
 using AlmacenApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,6 +27,7 @@ public class RolesController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Administrador")]
     public async Task<ActionResult<Rol>> CrearRol(Rol rol, CancellationToken cancellationToken)
     {
         rol.Id = 0;
@@ -36,6 +38,7 @@ public class RolesController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> ActualizarRol(int id, Rol rol, CancellationToken cancellationToken)
     {
         if (id != rol.Id)
@@ -57,6 +60,7 @@ public class RolesController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Administrador")]
     public async Task<IActionResult> EliminarRol(int id, CancellationToken cancellationToken)
     {
         var rol = await context.Roles.FindAsync([id], cancellationToken);

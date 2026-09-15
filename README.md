@@ -29,7 +29,30 @@ AlmacenApp/
 - Node.js 18+ y npm
 - SQL Server (autenticación de Windows), instancia local por ejemplo `DESKTOP-DQH9CCJ`
 
-## Backend
+## Docker (todo junto: base de datos + backend + frontend)
+
+Requiere [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado. Es la forma más rápida de levantar todo sin instalar .NET, Node ni SQL Server aparte — usa su propio SQL Server en un contenedor, separado del `DESKTOP-DQH9CCJ` que usas para desarrollo manual.
+
+```powershell
+copy .env.example .env
+docker compose up --build
+```
+
+(`.env` ya viene en `.gitignore`, así que sus valores no se suben al repo; cámbialos antes de exponer esto más allá de tu máquina).
+
+La primera vez, espera a ver en los logs algo como `Now listening on: http://+:8080` del backend — ahí ya aplicó las migraciones y sembró los datos iniciales automáticamente. Luego:
+
+- Frontend: `http://localhost:52567`
+- Backend: `http://localhost:5097`
+- El usuario admin sembrado (`admin@almacenapp.com` / `Admin123!`) funciona igual aquí.
+
+Para apagar todo: `docker compose down` (agrega `-v` si además quieres borrar los datos de esa base, para empezar de cero).
+
+> Nota: esta base de datos en Docker es independiente de tu SQL Server de Windows — para llenarla de datos de prueba corre [`scripts/agregar-datos-prueba.ps1`](scripts/agregar-datos-prueba.ps1) apuntando a `http://localhost:5097/api` (es el valor por defecto del script).
+
+¿Vas a instalar esto en otra computadora (por ejemplo, la de un cliente) y quien lo instale no es técnico? Ver [`docs/GUIA_INSTALACION_DOCKER.md`](docs/GUIA_INSTALACION_DOCKER.md) — guía paso a paso, pensada para alguien que nunca ha usado una terminal.
+
+## Backend (manual, sin Docker)
 
 ```powershell
 cd almacenapp/backend/AlmacenApi
@@ -46,7 +69,7 @@ En `appsettings.json`:
 
 ```json
 "ConnectionStrings": {
-  "DefaultConnection": "Server=DESKTOP-DQH9CCJ;Database=AlmacenApp;Trusted_Connection=True;TrustServerCertificate=True"
+  "AlmacenDb": "Server=DESKTOP-DQH9CCJ;Database=AlmacenApp;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True"
 },
 "Jwt": {
   "Key": "...",
@@ -66,7 +89,39 @@ En `appsettings.json`:
 
 Cambiar esta contraseña después del primer inicio de sesión.
 
-## Frontend
+### Pruebas automatizadas
+
+El backend tiene un proyecto de pruebas (xUnit + EF Core InMemory) que cubre la
+lógica de negocio crítica: recálculo de stock, login, y los flujos de
+Compras/Salidas/Movimientos de inventario (confirmar, cancelar, validaciones).
+
+```powershell
+cd almacenapp/backend/AlmacenApi.Tests
+dotnet test
+```
+
+No requiere SQL Server ni datos previos: cada prueba usa su propia base en
+memoria.
+
+### Pruebas manuales
+
+Ver [`docs/GUIA_PRUEBAS.md`](docs/GUIA_PRUEBAS.md) para un checklist paso a
+paso de todo lo que se puede probar a mano en la app (login, catálogos,
+productos, movimientos, compras, salidas, roles, etc.).
+
+### Datos de prueba
+
+Con el backend corriendo (`dotnet run`), [`scripts/agregar-datos-prueba.ps1`](scripts/agregar-datos-prueba.ps1)
+llena la app con proveedores, clientes, productos con stock inicial, una
+compra y dos salidas de ejemplo (llamando a la API real, así que respeta
+todas las validaciones):
+
+```powershell
+cd scripts
+.\agregar-datos-prueba.ps1
+```
+
+## Frontend (manual, sin Docker)
 
 ```powershell
 cd almacenapp

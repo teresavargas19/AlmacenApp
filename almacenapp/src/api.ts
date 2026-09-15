@@ -8,11 +8,13 @@ import type {
   Movimiento,
   Producto,
   Proveedor,
+  Rol,
   SalidaDetail,
   SalidaListItem,
   TipoMovimiento,
   Ubicacion,
   UnidadMedida,
+  Usuario,
   UsuarioSesion,
 } from './types'
 
@@ -226,6 +228,35 @@ export const crearSalida = (data: SalidaCreatePayload) => post<{ id: number }>('
 export const confirmarSalida = (id: number, almacenId: number) =>
   post<{ message: string }>(`/salidas/${id}/confirmar`, { almacenId })
 export const cancelarSalida = (id: number) => post<void>(`/salidas/${id}/cancelar`)
+
+// Roles
+export const getRoles = () => get<Rol[]>('/roles')
+export const crearRol = (data: { nombre: string; permisos?: string | null }) =>
+  post<Rol>('/roles', { id: 0, ...data })
+export const actualizarRol = (data: Rol) => put<void>(`/roles/${data.id}`, data)
+export const eliminarRol = (id: number) => del<void>(`/roles/${id}`)
+
+// Usuarios
+export const getUsuarios = () => get<Usuario[]>('/usuarios')
+
+export interface UsuarioCreatePayload {
+  rolId: number
+  nombre: string
+  email: string
+  password: string
+}
+export const crearUsuario = (data: UsuarioCreatePayload) => post<Usuario>('/usuarios', data)
+
+export interface UsuarioUpdatePayload {
+  id: number
+  rolId: number
+  nombre: string
+  email: string
+  activo: boolean
+  password?: string | null
+}
+export const actualizarUsuario = (data: UsuarioUpdatePayload) => put<void>(`/usuarios/${data.id}`, data)
+export const eliminarUsuario = (id: number) => del<void>(`/usuarios/${id}`)
 
 // Autenticación
 export interface LoginPayload {

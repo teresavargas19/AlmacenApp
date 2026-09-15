@@ -59,6 +59,7 @@ public class AuthController(AlmacenDbContext context, IConfiguration configurati
                 Id = usuario.Id,
                 RolId = usuario.RolId,
                 RolNombre = usuario.Rol.Nombre,
+                Permisos = usuario.Rol.Permisos,
                 Nombre = usuario.Nombre,
                 Email = usuario.Email,
                 Activo = usuario.Activo,

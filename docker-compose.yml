@@ -1,0 +1,59 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: almacenapp-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+    ports:
+      - "1433:1433"
+    volumes:
+      - almacenapp_db_data:/var/opt/mssql
+    healthcheck:
+      # mssql-tools18 es la ruta en las imágenes nuevas (necesita -C para
+      # confiar en el certificado autofirmado); mssql-tools es la de las
+      # imágenes viejas. Se prueban las dos para que funcione en ambos casos.
+      test: >
+        bash -c '
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" ||
+        /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1"
+        '
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    build:
+      context: ./almacenapp/backend/AlmacenApi
+    container_name: almacenapp-backend
+    environment:
+      ConnectionStrings__AlmacenDb: "Server=db;Database=AlmacenApp;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=True"
+      Jwt__Key: ${JWT_KEY}
+      Jwt__Issuer: AlmacenApi
+      Jwt__Audience: AlmacenApp
+      Jwt__ExpiresMinutes: "480"
+      # Aplica migraciones (y siembra los datos HasData) automáticamente al
+      # arrancar, porque esta base de datos parte vacía. Ver Program.cs.
+      AutoMigrate: "true"
+    ports:
+      - "5097:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./almacenapp
+      args:
+        # Se resuelve en el navegador de quien usa la app, no dentro de
+        # Docker, así que apunta al puerto publicado del backend en el host.
+        VITE_API_BASE_URL: http://localhost:5097/api
+    container_name: almacenapp-frontend
+    ports:
+      - "52567:80"
+    depends_on:
+      - backend
+
+volumes:
+  almacenapp_db_data:

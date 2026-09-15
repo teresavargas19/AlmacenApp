@@ -2,6 +2,7 @@
   <Folder Name="/almacenapp/" />
   <Folder Name="/almacenapp/backend/">
     <Project Path="almacenapp/backend/AlmacenApi/AlmacenApi.csproj" />
+    <Project Path="almacenapp/backend/AlmacenApi.Tests/AlmacenApi.Tests.csproj" />
   </Folder>
   <Project Path="almacenapp/almacenapp.esproj">
     <Build />

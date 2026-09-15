@@ -183,12 +183,19 @@ public class SalidasController(AlmacenDbContext context) : ControllerBase
             productosAfectados.Add(detalle.ProductoId);
         }
 
+        salida.Estado = "Completada";
+
+        // Hay que guardar las Existencias antes de recalcular el stock:
+        // RecalcularStockProductoAsync suma las Existencias tal como están en la
+        // base de datos, así que si no se guarda primero, sumaría el valor
+        // anterior (sin esta salida) y Producto.Stock quedaría desfasado.
+        await context.SaveChangesAsync(cancellationToken);
+
         foreach (var productoId in productosAfectados)
         {
             await context.RecalcularStockProductoAsync(productoId, cancellationToken);
         }
 
-        salida.Estado = "Completada";
         await context.SaveChangesAsync(cancellationToken);
 
         return Ok(new { message = "Salida confirmada y existencias actualizadas." });

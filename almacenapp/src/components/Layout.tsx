@@ -1,20 +1,22 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { tienePermiso } from '../permisos'
 
 const links = [
-  { to: '/', label: 'Inicio', end: true },
-  { to: '/productos', label: 'Productos' },
-  { to: '/existencias', label: 'Existencias' },
-  { to: '/movimientos', label: 'Movimientos' },
-  { to: '/compras', label: 'Compras' },
-  { to: '/salidas', label: 'Salidas' },
-  { to: '/proveedores', label: 'Proveedores' },
-  { to: '/clientes', label: 'Clientes' },
-  { to: '/catalogos', label: 'Catálogos' },
+  { to: '/productos', label: 'Productos', permiso: 'productos' },
+  { to: '/existencias', label: 'Existencias', permiso: 'existencias' },
+  { to: '/movimientos', label: 'Movimientos', permiso: 'movimientos' },
+  { to: '/compras', label: 'Compras', permiso: 'compras' },
+  { to: '/salidas', label: 'Salidas', permiso: 'salidas' },
+  { to: '/proveedores', label: 'Proveedores', permiso: 'proveedores' },
+  { to: '/clientes', label: 'Clientes', permiso: 'clientes' },
+  { to: '/catalogos', label: 'Catálogos', permiso: 'catalogos' },
 ]
 
 export default function Layout() {
   const { usuario, cerrarSesion } = useAuth()
+  const esAdministrador = usuario?.rolNombre === 'Administrador'
+  const linksVisibles = links.filter((link) => tienePermiso(usuario, link.permiso))
 
   return (
     <div className="app-shell">
@@ -23,16 +25,28 @@ export default function Layout() {
           Almacen<span>App</span>
         </div>
         <nav>
-          {links.map((link) => (
+          <NavLink to="/" end className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Inicio
+          </NavLink>
+          {linksVisibles.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
-              end={link.end}
               className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
             >
               {link.label}
             </NavLink>
           ))}
+          {esAdministrador && (
+            <>
+              <NavLink to="/usuarios" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                Usuarios
+              </NavLink>
+              <NavLink to="/roles" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+                Roles
+              </NavLink>
+            </>
+          )}
         </nav>
         <div className="sidebar-footer">
           <div className="sidebar-user">

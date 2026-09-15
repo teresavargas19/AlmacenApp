@@ -31,8 +31,13 @@ public class Producto
 
     public DateTime CreadoEn { get; set; } = DateTime.UtcNow;
 
-    public Categoria Categoria { get; set; } = null!;
-    public UnidadMedida UnidadMedida { get; set; } = null!;
+    // Nullable a propósito: al crear/editar un producto el cliente solo manda
+    // CategoriaId/UnidadMedidaId; estas propiedades solo se llenan cuando se
+    // consulta con Include(). Si fueran no-anulables, ASP.NET Core las trata
+    // como [Required] implícito y rechaza la solicitud con 400 aunque el Id
+    // sí venga.
+    public Categoria? Categoria { get; set; }
+    public UnidadMedida? UnidadMedida { get; set; }
     public ICollection<Existencia> Existencias { get; set; } = new List<Existencia>();
     public ICollection<MovimientoInventario> MovimientosInventario { get; set; } = new List<MovimientoInventario>();
     public ICollection<CompraDetalle> ComprasDetalle { get; set; } = new List<CompraDetalle>();

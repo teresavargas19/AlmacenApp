@@ -23,6 +23,7 @@ public class UsuariosController(AlmacenDbContext context) : ControllerBase
                 Id = usuario.Id,
                 RolId = usuario.RolId,
                 RolNombre = usuario.Rol.Nombre,
+                Permisos = usuario.Rol.Permisos,
                 Nombre = usuario.Nombre,
                 Email = usuario.Email,
                 Activo = usuario.Activo
@@ -40,6 +41,7 @@ public class UsuariosController(AlmacenDbContext context) : ControllerBase
                 Id = u.Id,
                 RolId = u.RolId,
                 RolNombre = u.Rol.Nombre,
+                Permisos = u.Rol.Permisos,
                 Nombre = u.Nombre,
                 Email = u.Email,
                 Activo = u.Activo
@@ -83,6 +85,7 @@ public class UsuariosController(AlmacenDbContext context) : ControllerBase
             Id = usuario.Id,
             RolId = usuario.RolId,
             RolNombre = rol.Nombre,
+            Permisos = rol.Permisos,
             Nombre = usuario.Nombre,
             Email = usuario.Email,
             Activo = usuario.Activo

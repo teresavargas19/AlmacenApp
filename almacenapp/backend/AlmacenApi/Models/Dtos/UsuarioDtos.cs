@@ -8,6 +8,14 @@ public class UsuarioDto
     public int Id { get; set; }
     public int RolId { get; set; }
     public string RolNombre { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Permisos del rol del usuario: "*" para acceso total, o una lista separada
+    /// por comas de claves de módulo (ej. "productos,compras"). El frontend usa
+    /// esto para decidir qué secciones mostrarle a este usuario.
+    /// </summary>
+    public string? Permisos { get; set; }
+
     public string Nombre { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public bool Activo { get; set; }
