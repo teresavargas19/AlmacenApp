@@ -39,6 +39,9 @@ public class AuthController(AlmacenDbContext context, IConfiguration configurati
             new(ClaimTypes.Name, usuario.Nombre),
             new(ClaimTypes.Email, usuario.Email),
             new(ClaimTypes.Role, usuario.Rol.Nombre),
+            // Usado por PermisoAuthorizationHandler para autorizar las
+            // acciones de escritura por módulo (ver Program.cs).
+            new("permisos", usuario.Rol.Permisos ?? string.Empty),
         };
 
         var token = new JwtSecurityToken(

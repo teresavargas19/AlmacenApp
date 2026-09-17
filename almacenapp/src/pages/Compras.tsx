@@ -12,6 +12,7 @@ import {
 import type { Almacen, CompraDetail, CompraListItem, Producto, Proveedor } from '../types'
 import ErrorAlert, { errorMessage } from '../components/ErrorAlert'
 import StatusBadge from '../components/StatusBadge'
+import { exportarExcel } from '../exportExcel'
 
 interface LineaForm {
   productoId: number | ''
@@ -85,6 +86,20 @@ export default function Compras() {
 
   function quitarLinea(index: number) {
     setLineas((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev))
+  }
+
+  function exportarCompras() {
+    exportarExcel(
+      'compras',
+      'Compras',
+      compras.map((compra) => ({
+        '#': compra.id,
+        Proveedor: compra.proveedorNombre,
+        Fecha: new Date(compra.fecha).toLocaleDateString(),
+        Estado: compra.estado,
+        Total: compra.total,
+      })),
+    )
   }
 
   const totalForm = lineas.reduce((acc, linea) => {
@@ -172,9 +187,14 @@ export default function Compras() {
           <h1>Compras</h1>
           <p className="page-subtitle">Encabezado y detalle de compras a proveedores</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setMostrarForm((v) => !v)} disabled={proveedores.length === 0}>
-          + Nueva compra
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-sm" onClick={exportarCompras} disabled={compras.length === 0}>
+            Exportar a Excel
+          </button>
+          <button className="btn btn-primary" onClick={() => setMostrarForm((v) => !v)} disabled={proveedores.length === 0}>
+            + Nueva compra
+          </button>
+        </div>
       </div>
 
       <ErrorAlert message={error} />

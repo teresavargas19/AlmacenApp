@@ -1,5 +1,6 @@
 using AlmacenApi.Data;
 using AlmacenApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,6 +31,7 @@ public class ProductosController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permiso:productos")]
     public async Task<ActionResult<Producto>> CrearProducto(Producto producto, CancellationToken cancellationToken)
     {
         var skuExiste = await context.Productos.AnyAsync(item => item.Sku == producto.Sku, cancellationToken);
@@ -47,6 +49,7 @@ public class ProductosController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Permiso:productos")]
     public async Task<IActionResult> ActualizarProducto(int id, Producto producto, CancellationToken cancellationToken)
     {
         if (id != producto.Id)
@@ -81,6 +84,7 @@ public class ProductosController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Permiso:productos")]
     public async Task<IActionResult> EliminarProducto(int id, CancellationToken cancellationToken)
     {
         var producto = await context.Productos.FindAsync([id], cancellationToken);

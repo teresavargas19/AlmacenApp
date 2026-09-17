@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { actualizarMinimo, getAlmacenes, getExistencias, getExistenciasBajoMinimo, getProductos } from '../api'
 import type { Almacen, Existencia, Producto } from '../types'
 import ErrorAlert, { errorMessage } from '../components/ErrorAlert'
+import { exportarExcel } from '../exportExcel'
 
 export default function Existencias() {
   const [items, setItems] = useState<Existencia[]>([])
@@ -52,6 +53,21 @@ export default function Existencias() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productoId, almacenId, soloBajoMinimo])
 
+  function exportarExistencias() {
+    exportarExcel(
+      'existencias',
+      'Existencias',
+      items.map((item) => ({
+        SKU: item.productoSku,
+        Producto: item.productoNombre,
+        Almacén: item.almacenNombre,
+        Ubicación: item.ubicacionNombre ?? '',
+        Cantidad: item.cantidad,
+        Mínimo: item.cantidadMinima,
+      })),
+    )
+  }
+
   function empezarEdicion(item: Existencia) {
     setEditandoId(item.id)
     setMinimoTemp(String(item.cantidadMinima))
@@ -77,6 +93,9 @@ export default function Existencias() {
           <h1>Existencias</h1>
           <p className="page-subtitle">Cantidad actual por producto y almacén</p>
         </div>
+        <button className="btn btn-sm" onClick={exportarExistencias} disabled={items.length === 0}>
+          Exportar a Excel
+        </button>
       </div>
 
       <ErrorAlert message={error} />

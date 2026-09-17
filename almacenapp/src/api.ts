@@ -5,6 +5,7 @@ import type {
   CompraDetail,
   CompraListItem,
   Existencia,
+  MetodoPago,
   Movimiento,
   Producto,
   Proveedor,
@@ -67,14 +68,17 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
-    let message = `Error ${response.status}`
+    // El backend responde 403 con cuerpo vacío cuando el rol del usuario no
+    // tiene el permiso requerido (política [Authorize(Policy = "Permiso:xxx")]).
+    // Sin este mensaje, el usuario vería el genérico "Error 403" sin contexto.
+    let message = response.status === 403 ? 'No tienes permiso para realizar esta acción.' : `Error ${response.status}`
     try {
       const body = await response.json()
       if (body?.message) {
         message = body.message as string
       }
     } catch {
-      // Sin cuerpo JSON: se deja el mensaje genérico.
+      // Sin cuerpo JSON: se deja el mensaje por defecto de arriba.
     }
     throw new ApiError(response.status, message)
   }
@@ -222,11 +226,15 @@ export const getSalida = (id: number) => get<SalidaDetail>(`/salidas/${id}`)
 export interface SalidaCreatePayload {
   clienteId?: number | null
   observaciones?: string | null
-  detalles: { productoId: number; cantidad: number }[]
+  metodoPago: MetodoPago
+  descuentoGeneralPorcentaje: number
+  detalles: { productoId: number; cantidad: number; precioUnitario: number; descuentoPorcentaje: number }[]
 }
 export const crearSalida = (data: SalidaCreatePayload) => post<{ id: number }>('/salidas', data)
 export const confirmarSalida = (id: number, almacenId: number) =>
   post<{ message: string }>(`/salidas/${id}/confirmar`, { almacenId })
+export const registrarAbono = (id: number, data: { monto: number; observaciones?: string | null }) =>
+  post<{ message: string; saldoPendiente: number }>(`/salidas/${id}/abonos`, data)
 export const cancelarSalida = (id: number) => post<void>(`/salidas/${id}/cancelar`)
 
 // Roles
@@ -257,6 +265,8 @@ export interface UsuarioUpdatePayload {
 }
 export const actualizarUsuario = (data: UsuarioUpdatePayload) => put<void>(`/usuarios/${data.id}`, data)
 export const eliminarUsuario = (id: number) => del<void>(`/usuarios/${id}`)
+export const cambiarPassword = (data: { passwordActual: string; passwordNueva: string }) =>
+  post<void>('/usuarios/cambiar-password', data)
 
 // Autenticación
 export interface LoginPayload {

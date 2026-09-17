@@ -210,8 +210,36 @@ public class Salida
     [StringLength(500)]
     public string? Observaciones { get; set; }
 
+    /// <summary>"Efectivo", "Transferencia" o "Credito" — ver validación en SalidasController.</summary>
+    [Required, StringLength(20)]
+    public string MetodoPago { get; set; } = "Efectivo";
+
+    [Range(typeof(decimal), "0", "100")]
+    public decimal DescuentoGeneralPorcentaje { get; set; }
+
+    /// <summary>Suma de (Cantidad * PrecioUnitario) de cada línea, ya con el descuento de línea aplicado, antes del descuento general.</summary>
+    [Range(typeof(decimal), "0", "79228162514264337593543950335")]
+    public decimal Subtotal { get; set; }
+
+    /// <summary>18% (ItbisPorcentaje en SalidasController) calculado sobre el subtotal ya con el descuento general aplicado.</summary>
+    [Range(typeof(decimal), "0", "79228162514264337593543950335")]
+    public decimal Itbis { get; set; }
+
+    /// <summary>Subtotal con descuento general aplicado, más Itbis. Es lo que paga el cliente.</summary>
+    [Range(typeof(decimal), "0", "79228162514264337593543950335")]
+    public decimal Total { get; set; }
+
+    /// <summary>
+    /// Solo relevante cuando MetodoPago = "Credito". Se inicializa en Total al
+    /// confirmar la venta (antes de confirmar, la venta no se ha entregado
+    /// todavía y no hay saldo que cobrar) y baja con cada AbonoSalida.
+    /// </summary>
+    [Range(typeof(decimal), "0", "79228162514264337593543950335")]
+    public decimal SaldoPendiente { get; set; }
+
     public Cliente? Cliente { get; set; }
     public ICollection<SalidaDetalle> Detalles { get; set; } = new List<SalidaDetalle>();
+    public ICollection<AbonoSalida> Abonos { get; set; } = new List<AbonoSalida>();
 }
 
 public class SalidaDetalle
@@ -223,8 +251,33 @@ public class SalidaDetalle
     [Range(typeof(decimal), "0.0001", "79228162514264337593543950335")]
     public decimal Cantidad { get; set; }
 
+    [Range(typeof(decimal), "0", "79228162514264337593543950335")]
+    public decimal PrecioUnitario { get; set; }
+
+    [Range(typeof(decimal), "0", "100")]
+    public decimal DescuentoPorcentaje { get; set; }
+
     public Salida Salida { get; set; } = null!;
     public Producto Producto { get; set; } = null!;
+}
+
+/// <summary>
+/// Abono (pago parcial) contra una venta a crédito. Cada abono reduce
+/// Salida.SaldoPendiente; ver SalidasController.RegistrarAbono.
+/// </summary>
+public class AbonoSalida
+{
+    public int Id { get; set; }
+    public int SalidaId { get; set; }
+    public DateTime Fecha { get; set; } = DateTime.UtcNow;
+
+    [Range(typeof(decimal), "0.01", "79228162514264337593543950335")]
+    public decimal Monto { get; set; }
+
+    [StringLength(500)]
+    public string? Observaciones { get; set; }
+
+    public Salida Salida { get; set; } = null!;
 }
 
 public class Rol

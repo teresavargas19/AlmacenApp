@@ -13,6 +13,7 @@ import Proveedores from './pages/Proveedores'
 import Clientes from './pages/Clientes'
 import Usuarios from './pages/Usuarios'
 import Roles from './pages/Roles'
+import MiCuenta from './pages/MiCuenta'
 import { useAuth } from './context/AuthContext'
 import { tienePermiso } from './permisos'
 import './App.css'
@@ -141,6 +142,7 @@ function App() {
             </RequireAdmin>
           }
         />
+        <Route path="mi-cuenta" element={<MiCuenta />} />
       </Route>
     </Routes>
   )

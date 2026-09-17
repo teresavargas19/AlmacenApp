@@ -53,6 +53,12 @@ export default function Layout() {
             <div className="sidebar-user-name">{usuario?.nombre}</div>
             <div className="sidebar-user-role">{usuario?.rolNombre}</div>
           </div>
+          <NavLink
+            to="/mi-cuenta"
+            className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+          >
+            Mi cuenta
+          </NavLink>
           <button className="btn btn-sm" onClick={cerrarSesion} style={{ width: '100%' }}>
             Cerrar sesión
           </button>

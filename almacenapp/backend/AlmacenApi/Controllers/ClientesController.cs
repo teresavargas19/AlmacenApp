@@ -1,5 +1,6 @@
 using AlmacenApi.Data;
 using AlmacenApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,7 @@ public class ClientesController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permiso:clientes")]
     public async Task<ActionResult<Cliente>> CrearCliente(Cliente cliente, CancellationToken cancellationToken)
     {
         cliente.Id = 0;
@@ -39,6 +41,7 @@ public class ClientesController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Permiso:clientes")]
     public async Task<IActionResult> ActualizarCliente(int id, Cliente cliente, CancellationToken cancellationToken)
     {
         if (id != cliente.Id)
@@ -63,6 +66,7 @@ public class ClientesController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Permiso:clientes")]
     public async Task<IActionResult> EliminarCliente(int id, CancellationToken cancellationToken)
     {
         var cliente = await context.Clientes.FindAsync([id], cancellationToken);

@@ -58,3 +58,14 @@ public class UsuarioUpdateDto
     [StringLength(255)]
     public string? Password { get; set; }
 }
+
+/// <summary>Usado por POST /api/usuarios/cambiar-password: cualquier usuario logueado
+/// cambia su propia contraseña, comprobando primero la actual.</summary>
+public class CambiarPasswordDto
+{
+    [Required]
+    public string PasswordActual { get; set; } = string.Empty;
+
+    [Required, MinLength(6), StringLength(255)]
+    public string PasswordNueva { get; set; } = string.Empty;
+}

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using AlmacenApi.Data;
 using AlmacenApi.Models;
 using AlmacenApi.Models.Dtos;
@@ -127,6 +128,38 @@ public class UsuariosController(AlmacenDbContext context) : ControllerBase
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Cualquier usuario logueado cambia su propia contraseña (no requiere ser
+    /// Administrador ni ningún permiso de módulo: solo estar autenticado, que ya
+    /// exige el filtro global de Program.cs). Pide la contraseña actual para
+    /// evitar que alguien con la sesión abierta la cambie sin saberla.
+    /// </summary>
+    [HttpPost("cambiar-password")]
+    public async Task<IActionResult> CambiarPassword(CambiarPasswordDto dto, CancellationToken cancellationToken)
+    {
+        var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(idClaim, out var usuarioId))
+        {
+            return Unauthorized();
+        }
+
+        var usuario = await context.Usuarios.FindAsync([usuarioId], cancellationToken);
+        if (usuario is null)
+        {
+            return NotFound();
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(dto.PasswordActual, usuario.PasswordHash))
+        {
+            return BadRequest(new { message = "La contraseña actual no es correcta." });
+        }
+
+        usuario.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.PasswordNueva);
+        await context.SaveChangesAsync(cancellationToken);
+
         return NoContent();
     }
 

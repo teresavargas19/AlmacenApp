@@ -1,5 +1,6 @@
 using AlmacenApi.Data;
 using AlmacenApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,7 @@ public class ProveedoresController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permiso:proveedores")]
     public async Task<ActionResult<Proveedor>> CrearProveedor(Proveedor proveedor, CancellationToken cancellationToken)
     {
         proveedor.Id = 0;
@@ -39,6 +41,7 @@ public class ProveedoresController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Permiso:proveedores")]
     public async Task<IActionResult> ActualizarProveedor(int id, Proveedor proveedor, CancellationToken cancellationToken)
     {
         if (id != proveedor.Id)
@@ -63,6 +66,7 @@ public class ProveedoresController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Permiso:proveedores")]
     public async Task<IActionResult> EliminarProveedor(int id, CancellationToken cancellationToken)
     {
         var proveedor = await context.Proveedores.FindAsync([id], cancellationToken);

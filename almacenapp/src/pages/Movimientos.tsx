@@ -9,6 +9,7 @@ import {
 } from '../api'
 import type { Almacen, Movimiento, Producto, TipoMovimiento } from '../types'
 import ErrorAlert, { errorMessage } from '../components/ErrorAlert'
+import { exportarExcel } from '../exportExcel'
 
 const TIPOS_SIMPLES = ['Entrada', 'Salida', 'Ajuste']
 
@@ -64,6 +65,22 @@ export default function Movimientos() {
   }, [])
 
   const tiposSimples = tipos.filter((tipo) => TIPOS_SIMPLES.includes(tipo.nombre))
+
+  function exportarMovimientos() {
+    exportarExcel(
+      'movimientos',
+      'Movimientos',
+      movimientos.map((movimiento) => ({
+        Fecha: new Date(movimiento.fecha).toLocaleString(),
+        Producto: movimiento.productoNombre,
+        Almacén: movimiento.almacenNombre,
+        Tipo: movimiento.tipoMovimientoNombre,
+        Cantidad: movimiento.cantidad,
+        Referencia: movimiento.referencia ?? '',
+        Observaciones: movimiento.observaciones ?? '',
+      })),
+    )
+  }
 
   async function enviarMovimiento() {
     if (productoId === '' || almacenId === '' || tipoMovimientoId === '' || !cantidad) return
@@ -249,7 +266,12 @@ export default function Movimientos() {
       )}
 
       <div className="card">
-        <h2>Movimientos recientes</h2>
+        <div className="page-header" style={{ marginBottom: 12 }}>
+          <h2 style={{ margin: 0 }}>Movimientos recientes</h2>
+          <button className="btn btn-sm" onClick={exportarMovimientos} disabled={movimientos.length === 0}>
+            Exportar a Excel
+          </button>
+        </div>
         {cargando ? (
           <p className="muted">Cargando…</p>
         ) : movimientos.length === 0 ? (

@@ -52,6 +52,33 @@ Para apagar todo: `docker compose down` (agrega `-v` si además quieres borrar l
 
 ¿Vas a instalar esto en otra computadora (por ejemplo, la de un cliente) y quien lo instale no es técnico? Ver [`docs/GUIA_INSTALACION_DOCKER.md`](docs/GUIA_INSTALACION_DOCKER.md) — guía paso a paso, pensada para alguien que nunca ha usado una terminal.
 
+## Respaldo de la base de datos
+
+**Base local (SQL Server en tu máquina, ej. `DESKTOP-DQH9CCJ`):**
+
+Con SSMS: clic derecho sobre la base `AlmacenApp` → Tasks → Back Up... → elige la ruta del `.bak` → OK.
+
+O por línea de comandos, sin SSMS:
+
+```powershell
+sqlcmd -S DESKTOP-DQH9CCJ -E -Q "BACKUP DATABASE AlmacenApp TO DISK = 'C:\Backups\AlmacenApp.bak' WITH FORMAT, INIT"
+```
+
+**Base dentro de Docker (contenedor `almacenapp-db`):**
+
+Ya vive en un volumen con nombre (`almacenapp_db_data`), así que los datos sobreviven un `docker compose down` / `up` normal — solo se pierden si corres `docker compose down -v` (el `-v` sí borra el volumen). Aun así, para un `.bak` portátil (moverlo a otra máquina o guardarlo aparte):
+
+```powershell
+docker exec -it almacenapp-db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "<MSSQL_SA_PASSWORD del .env>" -C -Q "BACKUP DATABASE AlmacenApp TO DISK = N'/var/opt/mssql/data/AlmacenApp.bak'"
+docker cp almacenapp-db:/var/opt/mssql/data/AlmacenApp.bak C:\Backups\AlmacenApp-docker.bak
+```
+
+**Restaurar un `.bak`** (misma idea para local o Docker, ajustando cómo llegas al servidor):
+
+```sql
+RESTORE DATABASE AlmacenApp FROM DISK = 'C:\Backups\AlmacenApp.bak' WITH REPLACE
+```
+
 ## Backend (manual, sin Docker)
 
 ```powershell
@@ -72,14 +99,21 @@ En `appsettings.json`:
   "AlmacenDb": "Server=DESKTOP-DQH9CCJ;Database=AlmacenApp;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True"
 },
 "Jwt": {
-  "Key": "...",
+  "Key": "",
   "Issuer": "AlmacenApi",
   "Audience": "AlmacenApp",
   "ExpiresMinutes": "480"
 }
 ```
 
-> ⚠️ La clave `Jwt:Key` es un secreto. En un entorno de producción no debe vivir en `appsettings.json`; usar `dotnet user-secrets` o variables de entorno.
+`Jwt:Key` viene vacía a propósito — es un secreto y ya no vive en texto plano en este archivo (antes sí, y como este repo se sube a GitHub, quedaba expuesta). Antes de correr el backend con `dotnet run` (fuera de Docker, que ya trae la suya propia por `.env`), hay que configurarla una vez con `dotnet user-secrets` (queda guardada fuera del repo, en tu propia máquina):
+
+```powershell
+cd almacenapp/backend/AlmacenApi
+dotnet user-secrets set "Jwt:Key" "pon-aqui-una-cadena-larga-y-aleatoria"
+```
+
+Sin este paso, el backend arranca pero falla al recibir la primera solicitud autenticada (incluyendo el login).
 
 ### Usuario administrador por defecto (seed)
 

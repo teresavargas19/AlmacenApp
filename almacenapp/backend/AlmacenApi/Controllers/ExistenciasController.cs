@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using AlmacenApi.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -75,6 +76,7 @@ public class ExistenciasController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPut("{id:int}/minimo")]
+    [Authorize(Policy = "Permiso:existencias")]
     public async Task<IActionResult> ActualizarMinimo(int id, ExistenciaMinimoDto dto, CancellationToken cancellationToken)
     {
         var existencia = await context.Existencias.FindAsync([id], cancellationToken);

@@ -1,6 +1,7 @@
 using AlmacenApi.Data;
 using AlmacenApi.Models;
 using AlmacenApi.Models.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -72,6 +73,7 @@ public class ComprasController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permiso:compras")]
     public async Task<ActionResult> CrearCompra(CompraCreateDto dto, CancellationToken cancellationToken)
     {
         var proveedorExiste = await context.Proveedores.AnyAsync(p => p.Id == dto.ProveedorId, cancellationToken);
@@ -112,6 +114,7 @@ public class ComprasController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost("{id:int}/confirmar")]
+    [Authorize(Policy = "Permiso:compras")]
     public async Task<ActionResult> ConfirmarCompra(int id, ConfirmarCompraDto dto, CancellationToken cancellationToken)
     {
         var compra = await context.Compras
@@ -178,6 +181,7 @@ public class ComprasController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost("{id:int}/cancelar")]
+    [Authorize(Policy = "Permiso:compras")]
     public async Task<ActionResult> CancelarCompra(int id, CancellationToken cancellationToken)
     {
         var compra = await context.Compras.FindAsync([id], cancellationToken);

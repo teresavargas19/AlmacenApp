@@ -1,6 +1,8 @@
 using System.Text;
+using AlmacenApi.Authorization;
 using AlmacenApi.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -45,7 +47,26 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["Key"]!)),
         };
     });
-builder.Services.AddAuthorization();
+// Autorización por permiso de módulo (ver Authorization/PermisoRequirement.cs):
+// cada acción de escritura de un módulo exige [Authorize(Policy = "Permiso:xxx")],
+// y el handler revisa el claim "permisos" del token (viene de Rol.Permisos).
+// Las lecturas (GET) siguen abiertas a cualquier usuario autenticado, igual que
+// antes — así el Dashboard, que junta datos de varios módulos, sigue funcionando
+// para cualquier rol sin necesitar todos los permisos.
+builder.Services.AddSingleton<IAuthorizationHandler, PermisoAuthorizationHandler>();
+builder.Services.AddAuthorization(options =>
+{
+    string[] modulosConPermiso =
+    [
+        "productos", "existencias", "movimientos", "compras",
+        "salidas", "proveedores", "clientes", "catalogos",
+    ];
+
+    foreach (var modulo in modulosConPermiso)
+    {
+        options.AddPolicy($"Permiso:{modulo}", policy => policy.Requirements.Add(new PermisoRequirement(modulo)));
+    }
+});
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

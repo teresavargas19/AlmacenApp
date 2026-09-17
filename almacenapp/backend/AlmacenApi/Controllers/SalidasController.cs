@@ -1,6 +1,7 @@
 using AlmacenApi.Data;
 using AlmacenApi.Models;
 using AlmacenApi.Models.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,11 @@ namespace AlmacenApi.Controllers;
 [Route("api/[controller]")]
 public class SalidasController(AlmacenDbContext context) : ControllerBase
 {
+    /// <summary>Tasa de ITBIS de República Dominicana. Si algún día hace falta que sea configurable, mover a appsettings.</summary>
+    private const decimal ItbisPorcentaje = 0.18m;
+
+    private static readonly string[] MetodosPagoValidos = ["Efectivo", "Transferencia", "Credito"];
+
     [HttpGet]
     public async Task<ActionResult> GetSalidas([FromQuery] string? estado, CancellationToken cancellationToken)
     {
@@ -35,6 +41,9 @@ public class SalidasController(AlmacenDbContext context) : ControllerBase
                 salida.Fecha,
                 salida.Estado,
                 salida.Observaciones,
+                salida.MetodoPago,
+                salida.Total,
+                salida.SaldoPendiente,
                 TotalUnidades = salida.Detalles.Sum(detalle => detalle.Cantidad)
             })
             .ToListAsync(cancellationToken);
@@ -55,14 +64,26 @@ public class SalidasController(AlmacenDbContext context) : ControllerBase
                 s.Fecha,
                 s.Estado,
                 s.Observaciones,
+                s.MetodoPago,
+                s.DescuentoGeneralPorcentaje,
+                s.Subtotal,
+                s.Itbis,
+                s.Total,
+                s.SaldoPendiente,
                 Detalles = s.Detalles.Select(detalle => new
                 {
                     detalle.Id,
                     detalle.ProductoId,
                     ProductoNombre = detalle.Producto.Nombre,
                     ProductoSku = detalle.Producto.Sku,
-                    detalle.Cantidad
-                })
+                    detalle.Cantidad,
+                    detalle.PrecioUnitario,
+                    detalle.DescuentoPorcentaje,
+                    Subtotal = detalle.Cantidad * detalle.PrecioUnitario * (1 - detalle.DescuentoPorcentaje / 100m)
+                }),
+                Abonos = s.Abonos
+                    .OrderByDescending(abono => abono.Fecha)
+                    .Select(abono => new { abono.Id, abono.Fecha, abono.Monto, abono.Observaciones })
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -70,8 +91,19 @@ public class SalidasController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permiso:salidas")]
     public async Task<ActionResult> CrearSalida(SalidaCreateDto dto, CancellationToken cancellationToken)
     {
+        if (!MetodosPagoValidos.Contains(dto.MetodoPago))
+        {
+            return BadRequest(new { message = "Método de pago inválido. Debe ser Efectivo, Transferencia o Credito." });
+        }
+
+        if (dto.MetodoPago == "Credito" && dto.ClienteId is null)
+        {
+            return BadRequest(new { message = "Las ventas a crédito requieren indicar un cliente." });
+        }
+
         if (dto.ClienteId is not null)
         {
             var clienteExiste = await context.Clientes.AnyAsync(c => c.Id == dto.ClienteId, cancellationToken);
@@ -92,16 +124,35 @@ public class SalidasController(AlmacenDbContext context) : ControllerBase
             return BadRequest(new { message = "Uno o más productos indicados no existen." });
         }
 
+        // Subtotal: suma de cada línea (cantidad * precio) ya con su descuento de
+        // línea aplicado, todavía sin el descuento general ni el ITBIS.
+        var subtotal = dto.Detalles.Sum(detalle =>
+            detalle.Cantidad * detalle.PrecioUnitario * (1 - detalle.DescuentoPorcentaje / 100m));
+        var subtotalConDescuentoGeneral = subtotal * (1 - dto.DescuentoGeneralPorcentaje / 100m);
+        var itbis = Math.Round(subtotalConDescuentoGeneral * ItbisPorcentaje, 2);
+        var total = Math.Round(subtotalConDescuentoGeneral + itbis, 2);
+
         var salida = new Salida
         {
             ClienteId = dto.ClienteId,
             Fecha = DateTime.UtcNow,
             Estado = "Pendiente",
             Observaciones = dto.Observaciones,
+            MetodoPago = dto.MetodoPago,
+            DescuentoGeneralPorcentaje = dto.DescuentoGeneralPorcentaje,
+            Subtotal = Math.Round(subtotal, 2),
+            Itbis = itbis,
+            Total = total,
+            // El saldo pendiente de una venta a crédito nace en 0 y se activa
+            // (= Total) al confirmar: antes de eso la mercancía no ha salido
+            // todavía y no hay nada que cobrar. Ver ConfirmarSalida.
+            SaldoPendiente = 0,
             Detalles = dto.Detalles.Select(detalle => new SalidaDetalle
             {
                 ProductoId = detalle.ProductoId,
-                Cantidad = detalle.Cantidad
+                Cantidad = detalle.Cantidad,
+                PrecioUnitario = detalle.PrecioUnitario,
+                DescuentoPorcentaje = detalle.DescuentoPorcentaje
             }).ToList()
         };
 
@@ -112,6 +163,7 @@ public class SalidasController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost("{id:int}/confirmar")]
+    [Authorize(Policy = "Permiso:salidas")]
     public async Task<ActionResult> ConfirmarSalida(int id, ConfirmarSalidaDto dto, CancellationToken cancellationToken)
     {
         var salida = await context.Salidas
@@ -184,6 +236,9 @@ public class SalidasController(AlmacenDbContext context) : ControllerBase
         }
 
         salida.Estado = "Completada";
+        // Recién ahora la mercancía sale de verdad, así que si es a crédito
+        // es el momento en que nace la deuda del cliente.
+        salida.SaldoPendiente = salida.MetodoPago == "Credito" ? salida.Total : 0m;
 
         // Hay que guardar las Existencias antes de recalcular el stock:
         // RecalcularStockProductoAsync suma las Existencias tal como están en la
@@ -202,6 +257,7 @@ public class SalidasController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost("{id:int}/cancelar")]
+    [Authorize(Policy = "Permiso:salidas")]
     public async Task<ActionResult> CancelarSalida(int id, CancellationToken cancellationToken)
     {
         var salida = await context.Salidas.FindAsync([id], cancellationToken);
@@ -218,5 +274,48 @@ public class SalidasController(AlmacenDbContext context) : ControllerBase
         salida.Estado = "Cancelada";
         await context.SaveChangesAsync(cancellationToken);
         return NoContent();
+    }
+
+    /// <summary>Registrar un abono (pago parcial) contra una venta a crédito ya completada.</summary>
+    [HttpPost("{id:int}/abonos")]
+    [Authorize(Policy = "Permiso:salidas")]
+    public async Task<ActionResult> RegistrarAbono(int id, AbonoCreateDto dto, CancellationToken cancellationToken)
+    {
+        var salida = await context.Salidas.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+        if (salida is null)
+        {
+            return NotFound();
+        }
+
+        if (salida.Estado != "Completada")
+        {
+            return Conflict(new { message = "Solo se pueden registrar abonos en ventas completadas." });
+        }
+
+        if (salida.MetodoPago != "Credito")
+        {
+            return Conflict(new { message = "Esta venta no es a crédito; no tiene saldo pendiente que abonar." });
+        }
+
+        if (dto.Monto > salida.SaldoPendiente)
+        {
+            return BadRequest(new
+            {
+                message = $"El abono ({dto.Monto:0.00}) no puede ser mayor que el saldo pendiente ({salida.SaldoPendiente:0.00})."
+            });
+        }
+
+        context.AbonosSalida.Add(new AbonoSalida
+        {
+            SalidaId = id,
+            Fecha = DateTime.UtcNow,
+            Monto = dto.Monto,
+            Observaciones = dto.Observaciones
+        });
+
+        salida.SaldoPendiente -= dto.Monto;
+        await context.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { message = "Abono registrado.", saldoPendiente = salida.SaldoPendiente });
     }
 }

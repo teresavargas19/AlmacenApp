@@ -1,6 +1,7 @@
 using AlmacenApi.Data;
 using AlmacenApi.Models;
 using AlmacenApi.Models.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -60,6 +61,7 @@ public class MovimientosInventarioController(AlmacenDbContext context) : Control
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permiso:movimientos")]
     public async Task<ActionResult<MovimientoInventario>> RegistrarMovimiento(
         MovimientoCreateDto dto,
         CancellationToken cancellationToken)
@@ -154,10 +156,29 @@ public class MovimientosInventarioController(AlmacenDbContext context) : Control
         await context.RecalcularStockProductoAsync(dto.ProductoId, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
 
-        return CreatedAtAction(nameof(GetMovimiento), new { id = movimiento.Id }, movimiento);
+        // No se devuelve la entidad "movimiento" tal cual: RecalcularStockProductoAsync
+        // carga el Producto en el mismo contexto, y EF Core hace "fixup" automático de
+        // las propiedades de navegación (movimiento.Producto <-> producto.MovimientosInventario)
+        // aunque nunca se pidió con Include(). Eso crea una referencia circular
+        // (movimiento -> Producto -> MovimientosInventario -> el mismo movimiento -> ...),
+        // y System.Text.Json truena a media respuesta al serializarla — el cliente ve
+        // "Failed to fetch" aunque el movimiento sí quedó guardado en la base. Se
+        // devuelve un objeto plano en su lugar, igual que GetMovimientos.
+        return CreatedAtAction(nameof(GetMovimiento), new { id = movimiento.Id }, new
+        {
+            movimiento.Id,
+            movimiento.ProductoId,
+            movimiento.AlmacenId,
+            movimiento.TipoMovimientoId,
+            movimiento.Cantidad,
+            movimiento.Fecha,
+            movimiento.Referencia,
+            movimiento.Observaciones
+        });
     }
 
     [HttpPost("transferencia")]
+    [Authorize(Policy = "Permiso:movimientos")]
     public async Task<ActionResult> RegistrarTransferencia(
         TransferenciaCreateDto dto,
         CancellationToken cancellationToken)

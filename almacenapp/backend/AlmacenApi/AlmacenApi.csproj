@@ -4,6 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Permite guardar secretos de desarrollo (Jwt:Key) fuera del repo con
+         `dotnet user-secrets`, en vez de en appsettings.json en texto plano. -->
+    <UserSecretsId>71785a3c-c2f5-45a7-8b4f-ef331705ecf3</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

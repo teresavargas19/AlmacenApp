@@ -19,6 +19,7 @@ public class AlmacenDbContext(DbContextOptions<AlmacenDbContext> options) : DbCo
     public DbSet<CompraDetalle> CompraDetalles => Set<CompraDetalle>();
     public DbSet<Salida> Salidas => Set<Salida>();
     public DbSet<SalidaDetalle> SalidaDetalles => Set<SalidaDetalle>();
+    public DbSet<AbonoSalida> AbonosSalida => Set<AbonoSalida>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
     public DbSet<Rol> Roles => Set<Rol>();
 
@@ -38,6 +39,7 @@ public class AlmacenDbContext(DbContextOptions<AlmacenDbContext> options) : DbCo
         modelBuilder.Entity<CompraDetalle>().ToTable("compra_detalles");
         modelBuilder.Entity<Salida>().ToTable("salidas");
         modelBuilder.Entity<SalidaDetalle>().ToTable("salida_detalles");
+        modelBuilder.Entity<AbonoSalida>().ToTable("abonos_salida");
         modelBuilder.Entity<Usuario>().ToTable("usuarios");
         modelBuilder.Entity<Rol>().ToTable("roles");
 
@@ -67,6 +69,14 @@ public class AlmacenDbContext(DbContextOptions<AlmacenDbContext> options) : DbCo
         modelBuilder.Entity<CompraDetalle>().Property(detalle => detalle.Cantidad).HasPrecision(18, 4);
         modelBuilder.Entity<CompraDetalle>().Property(detalle => detalle.PrecioUnitario).HasPrecision(18, 2);
         modelBuilder.Entity<SalidaDetalle>().Property(detalle => detalle.Cantidad).HasPrecision(18, 4);
+        modelBuilder.Entity<SalidaDetalle>().Property(detalle => detalle.PrecioUnitario).HasPrecision(18, 2);
+        modelBuilder.Entity<SalidaDetalle>().Property(detalle => detalle.DescuentoPorcentaje).HasPrecision(5, 2);
+        modelBuilder.Entity<Salida>().Property(salida => salida.DescuentoGeneralPorcentaje).HasPrecision(5, 2);
+        modelBuilder.Entity<Salida>().Property(salida => salida.Subtotal).HasPrecision(18, 2);
+        modelBuilder.Entity<Salida>().Property(salida => salida.Itbis).HasPrecision(18, 2);
+        modelBuilder.Entity<Salida>().Property(salida => salida.Total).HasPrecision(18, 2);
+        modelBuilder.Entity<Salida>().Property(salida => salida.SaldoPendiente).HasPrecision(18, 2);
+        modelBuilder.Entity<AbonoSalida>().Property(abono => abono.Monto).HasPrecision(18, 2);
 
         modelBuilder.Entity<Ubicacion>()
             .HasOne(ubicacion => ubicacion.Almacen)
@@ -104,6 +114,8 @@ public class AlmacenDbContext(DbContextOptions<AlmacenDbContext> options) : DbCo
             .HasForeignKey(detalle => detalle.SalidaId).OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<SalidaDetalle>().HasOne(detalle => detalle.Producto).WithMany(producto => producto.SalidasDetalle)
             .HasForeignKey(detalle => detalle.ProductoId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<AbonoSalida>().HasOne(abono => abono.Salida).WithMany(salida => salida.Abonos)
+            .HasForeignKey(abono => abono.SalidaId).OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<Usuario>().HasIndex(usuario => usuario.Email).IsUnique();
         modelBuilder.Entity<Usuario>().HasOne(usuario => usuario.Rol).WithMany(rol => rol.Usuarios)

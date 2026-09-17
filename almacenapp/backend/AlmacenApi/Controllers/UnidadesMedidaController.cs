@@ -1,5 +1,6 @@
 using AlmacenApi.Data;
 using AlmacenApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,7 @@ public class UnidadesMedidaController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permiso:catalogos")]
     public async Task<ActionResult<UnidadMedida>> CrearUnidad(UnidadMedida unidad, CancellationToken cancellationToken)
     {
         unidad.Id = 0;
@@ -39,6 +41,7 @@ public class UnidadesMedidaController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Permiso:catalogos")]
     public async Task<IActionResult> ActualizarUnidad(int id, UnidadMedida unidad, CancellationToken cancellationToken)
     {
         if (id != unidad.Id)
@@ -61,6 +64,7 @@ public class UnidadesMedidaController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Permiso:catalogos")]
     public async Task<IActionResult> EliminarUnidad(int id, CancellationToken cancellationToken)
     {
         var unidad = await context.UnidadesMedida.FindAsync([id], cancellationToken);

@@ -1,5 +1,6 @@
 using AlmacenApi.Data;
 using AlmacenApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +35,7 @@ public class UbicacionesController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permiso:catalogos")]
     public async Task<ActionResult<Ubicacion>> CrearUbicacion(Ubicacion ubicacion, CancellationToken cancellationToken)
     {
         var almacenExiste = await context.Almacenes.AnyAsync(almacen => almacen.Id == ubicacion.AlmacenId, cancellationToken);
@@ -50,6 +52,7 @@ public class UbicacionesController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Permiso:catalogos")]
     public async Task<IActionResult> ActualizarUbicacion(int id, Ubicacion ubicacion, CancellationToken cancellationToken)
     {
         if (id != ubicacion.Id)
@@ -74,6 +77,7 @@ public class UbicacionesController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Permiso:catalogos")]
     public async Task<IActionResult> EliminarUbicacion(int id, CancellationToken cancellationToken)
     {
         var ubicacion = await context.Ubicaciones.FindAsync([id], cancellationToken);

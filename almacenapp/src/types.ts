@@ -127,6 +127,8 @@ export interface CompraDetail {
   detalles: CompraDetalleView[]
 }
 
+export type MetodoPago = 'Efectivo' | 'Transferencia' | 'Credito'
+
 export interface SalidaListItem {
   id: number
   clienteId?: number | null
@@ -134,6 +136,9 @@ export interface SalidaListItem {
   fecha: string
   estado: string
   observaciones?: string | null
+  metodoPago: MetodoPago
+  total: number
+  saldoPendiente: number
   totalUnidades: number
 }
 
@@ -143,6 +148,16 @@ export interface SalidaDetalleView {
   productoNombre: string
   productoSku: string
   cantidad: number
+  precioUnitario: number
+  descuentoPorcentaje: number
+  subtotal: number
+}
+
+export interface AbonoView {
+  id: number
+  fecha: string
+  monto: number
+  observaciones?: string | null
 }
 
 export interface SalidaDetail {
@@ -152,7 +167,14 @@ export interface SalidaDetail {
   fecha: string
   estado: string
   observaciones?: string | null
+  metodoPago: MetodoPago
+  descuentoGeneralPorcentaje: number
+  subtotal: number
+  itbis: number
+  total: number
+  saldoPendiente: number
   detalles: SalidaDetalleView[]
+  abonos: AbonoView[]
 }
 
 export interface Rol {

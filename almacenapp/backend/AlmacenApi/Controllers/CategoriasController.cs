@@ -1,5 +1,6 @@
 using AlmacenApi.Data;
 using AlmacenApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,7 @@ public class CategoriasController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = "Permiso:catalogos")]
     public async Task<ActionResult<Categoria>> CrearCategoria(Categoria categoria, CancellationToken cancellationToken)
     {
         categoria.Id = 0;
@@ -39,6 +41,7 @@ public class CategoriasController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Policy = "Permiso:catalogos")]
     public async Task<IActionResult> ActualizarCategoria(int id, Categoria categoria, CancellationToken cancellationToken)
     {
         if (id != categoria.Id)
@@ -60,6 +63,7 @@ public class CategoriasController(AlmacenDbContext context) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Policy = "Permiso:catalogos")]
     public async Task<IActionResult> EliminarCategoria(int id, CancellationToken cancellationToken)
     {
         var categoria = await context.Categorias.FindAsync([id], cancellationToken);
